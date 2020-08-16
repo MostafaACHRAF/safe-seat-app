@@ -7,16 +7,14 @@ import com.sqli.safeSeat.services.FloorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.swing.text.html.Option;
+import java.util.List;
 import java.util.Optional;
 
-@Service
-public class FloorServiceImpl implements FloorService {
+@Service public class FloorServiceImpl implements FloorService {
 
-    private FloorRepository floorRepository;
+    private final FloorRepository floorRepository;
 
-    @Autowired
-    public FloorServiceImpl(FloorRepository floorRepository) {
+    @Autowired public FloorServiceImpl(FloorRepository floorRepository) {
         this.floorRepository = floorRepository;
     }
 
@@ -26,8 +24,13 @@ public class FloorServiceImpl implements FloorService {
     }
 
     @Override public Floor findBySeat(Seat seat) {
-         Optional<Floor> searchableFloor =
-            this.floorRepository.findAll().stream().filter(floor -> floor.getSeats().contains(seat)).findFirst();
+        Optional<Floor>
+                searchableFloor =
+                this.floorRepository.findAll().stream().filter(floor -> floor.getSeats().contains(seat)).findFirst();
         return searchableFloor.orElse(null);
+    }
+
+    @Override public List<Floor> findAll() {
+        return this.floorRepository.findAll();
     }
 }

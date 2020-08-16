@@ -19,14 +19,19 @@ import java.util.Optional;
     }
 
     @Override public boolean hasReservationWithin(Employee employee, Date startDate, Date endDate) {
-        employee.getReservations().forEach(reservation -> {
-            //if startDate within an other reservation period
-            //or endDate within an other reservation period
-            if (true) {
+        long nbrOfReservationsWithinTheSamePeriod = employee.getReservations().stream().filter(reservation -> {
+            boolean
+                    isStartDateWithinOtherPeriod =
+                    startDate.compareTo(reservation.getStartDate()) >= 0
+                    && startDate.compareTo(reservation.getEndDate()) <= 0;
+            boolean
+                    isEndDateWithinOtherPeriod =
+                    endDate.compareTo(reservation.getStartDate()) >= 0
+                    && endDate.compareTo(reservation.getEndDate()) <= 0;
+            return isStartDateWithinOtherPeriod || isEndDateWithinOtherPeriod;
+        }).count();
 
-            }
-        });
-        return false;
+        return nbrOfReservationsWithinTheSamePeriod > 0;
     }
 
     @Override public void save(Employee employee) {

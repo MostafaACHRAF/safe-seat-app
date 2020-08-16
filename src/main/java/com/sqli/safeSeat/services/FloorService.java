@@ -6,6 +6,10 @@ import com.sqli.safeSeat.models.Seat;
 import java.util.List;
 
 public interface FloorService {
+
     Floor findById(int floorId);
+
     Floor findBySeat(Seat seat);
+
+    List<Floor> findAll();
 }

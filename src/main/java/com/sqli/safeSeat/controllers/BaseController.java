@@ -3,6 +3,7 @@ package com.sqli.safeSeat.controllers;
 import com.sqli.safeSeat.dtos.ReservationDTO;
 import com.sqli.safeSeat.dtos.ReservationDetailsDTO;
 import com.sqli.safeSeat.enums.Availability;
+import com.sqli.safeSeat.enums.Team;
 import com.sqli.safeSeat.models.Employee;
 import com.sqli.safeSeat.models.Floor;
 import com.sqli.safeSeat.models.Reservation;
@@ -14,16 +15,18 @@ import com.sqli.safeSeat.services.ReservationService;
 import com.sqli.safeSeat.services.SeatService;
 import com.sqli.safeSeat.services.SiteService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -56,7 +59,7 @@ import java.util.stream.Collectors;
      * @return Map of valid seats by site and by floor
      */
     @GetMapping("/valid/seats") public Map<Site, Map<Floor, List<Seat>>> availableValidSeats() {
-        Map<Site, Map<Floor, List<Seat>>> result = new HashMap();
+        Map<Site, Map<Floor, List<Seat>>> result = new HashMap<>();
         this.siteService.findAll().forEach(site -> {
             Map<Floor, List<Seat>> seatsPerFloor = new HashMap<>();
             for (Floor floor : site.getFloors()) {
@@ -80,27 +83,41 @@ import java.util.stream.Collectors;
      * @param reservationDTO reservation data access project
      */
     @PostMapping("/new/reservation") public void reserveASeat(@RequestBody ReservationDTO reservationDTO) {
-        Floor floor = this.floorService.findById(reservationDTO.getFloorId());
         Employee employee = this.employeeService.findById(reservationDTO.getEmployeeId());
         Seat seat = this.seatService.findById(reservationDTO.getSeatId());
+        checkInputsValidity(employee, reservationDTO);
+
+        Reservation reservation = new Reservation();
+        reservation.setStartDate(reservationDTO.getStartDate());
+        reservation.setEndDate(reservationDTO.getEndDate());
+        reservation.setSeat(seat);
+        this.reservationService.save(reservation);
+        seat.setAvailability(Availability.RESERVED);
+        this.seatService.save(seat);
+        List<Reservation> employeeReservations = new ArrayList<>(employee.getReservations());
+        employeeReservations.add(reservation);
+        employee.setReservations(employeeReservations);
+        this.employeeService.save(employee);
+    }
+
+    private void checkInputsValidity(Employee employee, ReservationDTO reservationDTO) {
+        boolean startDateAfterOrEqualNow = reservationDTO.getStartDate().compareTo(new Date()) >= 0;
+        boolean endDateAfterStartDate = reservationDTO.getEndDate().after(reservationDTO.getStartDate());
         boolean
                 hasOtherReservationWithinTheSamePeriod =
                 this.employeeService.hasReservationWithin(employee,
                         reservationDTO.getStartDate(),
                         reservationDTO.getEndDate());
-        if (this.seatService.canBeReserved(floor, seat) && !hasOtherReservationWithinTheSamePeriod) {
-            Reservation reservation = new Reservation();
-            reservation.setStartDate(reservationDTO.getStartDate());
-            reservation.setEndDate(reservationDTO.getEndDate());
-            reservation.setSeat(seat);
-            this.reservationService.save(reservation);
-            seat.setAvailability(Availability.RESERVED);
-            this.seatService.save(seat);
-            List<Reservation> employeeReservations = new ArrayList<>(employee.getReservations());
-            employeeReservations.add(reservation);
-            employee.setReservations(employeeReservations);
-            this.employeeService.save(employee);
-        }
+
+        if (!startDateAfterOrEqualNow)
+            throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED,
+                    "Start date must be greater or equal now!");
+        if (!endDateAfterStartDate)
+            throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED,
+                    "End date must be must be greater than start date!");
+        if (hasOtherReservationWithinTheSamePeriod)
+            throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED,
+                    "They are other reservations withing the same period!");
     }
 
     /**
@@ -133,7 +150,7 @@ import java.util.stream.Collectors;
      * @return list of valid seats
      */
     @GetMapping("/team/{teamId}/valid/seats") public Map<Site, Map<Floor, Set<Seat>>> nearestAvailableSeatsByTeam(@PathVariable String teamId) {
-        Map<Site, Map<Floor, Set<Seat>>> result = new HashMap();
+        Map<Site, Map<Floor, Set<Seat>>> result = new HashMap<>();
 
         this.siteService.findAll().forEach(site -> {
             Map<Floor, Set<Seat>> floorToSeats = new HashMap<>();
@@ -149,15 +166,11 @@ import java.util.stream.Collectors;
                                 .collect(Collectors.toList());
                 double minimalValidDistance = this.seatService.calculateMinimalValidDistanceBetweenTwoSeats(floor);
                 Set<Seat> nearestSeats = new HashSet<>();
-                if (teamReservedSeats.isEmpty()) {
-                    nearestSeats.addAll(floorAvailableValidSeats);
-                } else if (!floorAvailableValidSeats.isEmpty()) {
-                    for (Seat reservedSeat : teamReservedSeats) {
-                        for (Seat availableSeat : floorAvailableValidSeats) {
-                            double distance = this.seatService.distanceBetween(availableSeat, reservedSeat);
-                            if (distance == minimalValidDistance) {
-                                nearestSeats.add(availableSeat);
-                            }
+                for (Seat reservedSeat : teamReservedSeats) {
+                    for (Seat availableSeat : floorAvailableValidSeats) {
+                        double distance = this.seatService.distanceBetween(availableSeat, reservedSeat);
+                        if (distance == minimalValidDistance) {
+                            nearestSeats.add(availableSeat);
                         }
                     }
                 }
@@ -170,14 +183,54 @@ import java.util.stream.Collectors;
 
     /**
      * Get reservations details for one employee
-     * @param employeeId
+     * @param employeeId employee identifier
      * @return reservation details
      */
-    @GetMapping("/user/{employeeId}/reservations/") public List<ReservationDetailsDTO> reservationsByEmployee(@PathVariable String employeeId) {
+    @GetMapping("/user/{employeeId}/reservations") public List<ReservationDetailsDTO> reservationsByEmployee(@PathVariable String employeeId) {
         return this.reservationsDetails()
                 .stream()
                 .filter(details -> details.getEmployeeId() == Integer.parseInt(employeeId))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Get all seats
+     * @return list of seats
+     */
+    @GetMapping("/all/seats") public List<Seat> getAllSeats() {
+        return this.seatService.findAll();
+    }
+
+    /**
+     * Get all employees
+     * @return list of employees
+     */
+    @GetMapping("/all/employees") public List<Employee> getAllEmployees() {
+        return this.employeeService.findAll();
+    }
+
+    /**
+     * Get all teams
+     * @return list of teams
+     */
+    @GetMapping("/all/teams") public List<Team> getAllTeams() {
+        return Arrays.asList(Team.values());
+    }
+
+    /**
+     * Get all sites
+     * @return list of sites
+     */
+    @GetMapping("/all/sites") public List<Site> getAllSites() {
+        return this.siteService.findAll();
+    }
+
+    /**
+     * Get all floors
+     * @return list of floors
+     */
+    @GetMapping("/all/floors") public List<Floor> getAllFloors() {
+        return this.floorService.findAll();
     }
 
 }
