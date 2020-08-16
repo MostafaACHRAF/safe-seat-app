@@ -16,6 +16,7 @@ import com.sqli.safeSeat.services.SeatService;
 import com.sqli.safeSeat.services.SiteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,7 +27,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -81,12 +82,17 @@ import java.util.stream.Collectors;
      * The seat should be valid
      * And the employee can't reserve multiple seats within the same period
      * @param reservationDTO reservation data access project
+     * @return Response message
      */
-    @PostMapping("/new/reservation") public void reserveASeat(@RequestBody ReservationDTO reservationDTO) {
+    @PostMapping("/new/reservation") public ResponseEntity<String> reserveASeat(@RequestBody ReservationDTO reservationDTO) {
+        Floor floor = this.floorService.findById(reservationDTO.getFloorId());
         Employee employee = this.employeeService.findById(reservationDTO.getEmployeeId());
         Seat seat = this.seatService.findById(reservationDTO.getSeatId());
         checkInputsValidity(employee, reservationDTO);
 
+        if (!this.seatService.canBeReserved(floor, seat))
+            return new ResponseEntity<>("This seat can't be reserved, because there is a violation of distancing rules",
+                    HttpStatus.EXPECTATION_FAILED);
         Reservation reservation = new Reservation();
         reservation.setStartDate(reservationDTO.getStartDate());
         reservation.setEndDate(reservationDTO.getEndDate());
@@ -98,10 +104,15 @@ import java.util.stream.Collectors;
         employeeReservations.add(reservation);
         employee.setReservations(employeeReservations);
         this.employeeService.save(employee);
+        return new ResponseEntity<>("Done ! Your seat has been reserved successfully.", HttpStatus.OK);
     }
 
     private void checkInputsValidity(Employee employee, ReservationDTO reservationDTO) {
-        boolean startDateAfterOrEqualNow = reservationDTO.getStartDate().compareTo(new Date()) >= 0;
+        Calendar today = Calendar.getInstance();
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        today.set(Calendar.SECOND, 0);
+        boolean startDateAfterOrEqualNow = reservationDTO.getStartDate().compareTo(today.getTime()) >= 0;
         boolean endDateAfterStartDate = reservationDTO.getEndDate().after(reservationDTO.getStartDate());
         boolean
                 hasOtherReservationWithinTheSamePeriod =
