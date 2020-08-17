@@ -17,6 +17,11 @@ This API, helps you reserve your seat at work, in a way that respects the distan
 1. The right, left, front, and behind seats must be empty.
 2. In a floor X the available seats for reservation are 50% to the floor's total capacity.
 
+## Data example :
+Here is the default data,loaded on server startup : <br/>
+> This image demonstrate, the available safe seats
+![Seats example](/logo/seats.png)
+
 
 
 ## The exposed endpoints :
