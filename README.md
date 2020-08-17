@@ -19,8 +19,10 @@ This API, helps you reserve your seat at work, in a way that respects the distan
 
 ## Data example :
 Here is the default data,loaded on server startup : <br/>
-> This image demonstrate, the available safe seats
+
 ![Seats example](/logo/seats.png)
+
+> This image demonstrate, the available safe seats
 
 
 
