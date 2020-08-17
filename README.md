@@ -1,4 +1,4 @@
-# safe-seat-app
+# Safe-Seat-App
 Pick your safe seat, and enjoy life, stay away from COVID-19 :)
 
 
@@ -10,23 +10,32 @@ This API, helps you reserve your seat at work, in a way that respects the distan
 
 
 ## The rules of a valid (safe) seat are :
-1- The right, left, front, and behind seats must be empty.
-2- In a floor X the available seats for reservation are 50% to the floor's total capacity.
+1. The right, left, front, and behind seats must be empty.
+2. In a floor X the available seats for reservation are 50% to the floor's total capacity.
 
 
 
 ## The exposed endpoints :
 ### https://safe-seat-app.herokuapp.com/api/v1/valid/seats
-[GET_REQUEST] => Get all valid seats, that we can book.
+> [GET_REQUEST] => Get all valid seats, that we can book.
 
 ### https://safe-seat-app.herokuapp.com/api/v1/new/reservation
-[POST_REQUEST] => Book new valid seat, We can't reserve multiple seats within the same period.
+> [POST_REQUEST] => Book new valid seat, We can't reserve multiple seats within the same period.
 
 ### https://safe-seat-app.herokuapp.com/api/v1/reservations/details
-[GET_REQUEST] => Get all reservations details for all employees/users.
+> [GET_REQUEST] => Get all reservations details for all employees/users.
 
 ### https://safe-seat-app.herokuapp.com/api/v1/team/{teamId}/valid/seats
-[GET_REQUEST],[TEAM_ID] => Get the nearest valid seats to your teammates.
+> [GET_REQUEST],[TEAM_ID] => Get the nearest valid seats to your teammates.
 
 ### https://safe-seat-app.herokuapp.com/api/v1/user/{employeeId}/reservations
-[GET_REQUEST],[EMPLOYEE_ID] => Get reservations details for one employee/user.
+> [GET_REQUEST],[EMPLOYEE_ID] => Get reservations details for one employee/user.
+
+### https://safe-seat-app.herokuapp.com/api/v1/all/seats
+> [GET_REQUEST] => Get all seats
+
+### https://safe-seat-app.herokuapp.com/api/v1/all/sites
+> [GET_REQUEST] => Get all sites
+
+### https://safe-seat-app.herokuapp.com/api/v1/all/floors
+> [GET_REQUEST] => Get all floors
