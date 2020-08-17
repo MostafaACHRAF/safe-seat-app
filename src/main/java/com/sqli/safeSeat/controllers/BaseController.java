@@ -185,7 +185,7 @@ import java.util.stream.Collectors;
                 for (Seat reservedSeat : teamReservedSeats) {
                     for (Seat availableSeat : floorAvailableValidSeats) {
                         double distance = this.seatService.distanceBetween(availableSeat, reservedSeat);
-                        if (distance == minimalValidDistance) {
+                        if (distance <= minimalValidDistance) {
                             nearestSeats.add(availableSeat);
                         }
                     }
