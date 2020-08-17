@@ -17,14 +17,16 @@ import com.sqli.safeSeat.services.SiteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
+import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -126,9 +128,11 @@ import java.util.stream.Collectors;
         if (!startDateAfterOrEqualNow)
             return new ResponseEntity<>("Start date must be greater or equal now!", HttpStatus.EXPECTATION_FAILED);
         if (!endDateAfterStartDate)
-            return new ResponseEntity<>("End date must be must be greater than start date!", HttpStatus.EXPECTATION_FAILED);
+            return new ResponseEntity<>("End date must be must be greater than start date!",
+                    HttpStatus.EXPECTATION_FAILED);
         if (hasOtherReservationWithinTheSamePeriod)
-            return new ResponseEntity<>("They are other reservations withing the same period!", HttpStatus.EXPECTATION_FAILED);
+            return new ResponseEntity<>("They are other reservations withing the same period!",
+                    HttpStatus.EXPECTATION_FAILED);
         return new ResponseEntity<>("Data inputs are valid", HttpStatus.OK);
     }
 
@@ -245,4 +249,19 @@ import java.util.stream.Collectors;
         return this.floorService.findAll();
     }
 
+    /**
+     * Reset reserved seats availability
+     * Then delete all reservations
+     * @return Response message
+     */
+    @Transactional @DeleteMapping("delete/all/reservations") public ResponseEntity<String> deleteAllReservations() {
+        this.reservationService.findAll()
+                .forEach(reservation -> this.seatService.resetSeatAvailability(reservation.getSeat()));
+        this.employeeService.findAll().forEach(employee -> {
+            employee.setReservations(new ArrayList<>());
+            this.employeeService.save(employee);
+        });
+        this.reservationService.deleteAll();
+        return new ResponseEntity<>("All reservations are deleted successfully.", HttpStatus.OK);
+    }
 }

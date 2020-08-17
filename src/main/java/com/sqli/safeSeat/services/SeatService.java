@@ -16,4 +16,5 @@ public interface SeatService {
     List<Seat> reservedSeatsByTeamAndFloor(int floorId, int teamId);
     List<Seat> findAll();
     double calculateMinimalValidDistanceBetweenTwoSeats(Floor floor);
+    void resetSeatAvailability(Seat seat);
 }

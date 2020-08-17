@@ -113,4 +113,9 @@ import java.util.stream.Collectors;
                 });
         return minimalValidDistance[0] == 100000L ? -1 : Math.floor(minimalValidDistance[0]);
     }
+
+    @Override public void resetSeatAvailability(Seat seat) {
+        seat.setAvailability(Availability.AVAILABLE);
+        this.save(seat);
+    }
 }

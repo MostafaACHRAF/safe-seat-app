@@ -44,4 +44,8 @@ import java.util.stream.Collectors;
                 .forEach(employee -> reservations.addAll(employee.getReservations()));
         return reservations;
     }
+
+    @Override public void deleteAll() {
+        this.reservationRepository.deleteAll();
+    }
 }
