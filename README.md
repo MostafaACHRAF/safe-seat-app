@@ -1,4 +1,5 @@
 # Safe-Seat-App
+![App Logo](/logo/safe-seat-logo.png)
 Pick your safe seat, and enjoy life, stay away from COVID-19 :)
 
 
