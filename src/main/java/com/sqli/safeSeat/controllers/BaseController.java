@@ -88,7 +88,10 @@ import java.util.stream.Collectors;
         Floor floor = this.floorService.findById(reservationDTO.getFloorId());
         Employee employee = this.employeeService.findById(reservationDTO.getEmployeeId());
         Seat seat = this.seatService.findById(reservationDTO.getSeatId());
-        checkInputsValidity(employee, reservationDTO);
+        ResponseEntity<String> response = checkInputsValidity(employee, reservationDTO);
+
+        if (response.getStatusCode().isError())
+            return response;
 
         if (!this.seatService.canBeReserved(floor, seat))
             return new ResponseEntity<>("This seat can't be reserved, because there is a violation of distancing rules",
@@ -107,7 +110,7 @@ import java.util.stream.Collectors;
         return new ResponseEntity<>("Done ! Your seat has been reserved successfully.", HttpStatus.OK);
     }
 
-    private void checkInputsValidity(Employee employee, ReservationDTO reservationDTO) {
+    private ResponseEntity<String> checkInputsValidity(Employee employee, ReservationDTO reservationDTO) {
         Calendar today = Calendar.getInstance();
         today.set(Calendar.HOUR_OF_DAY, 0);
         today.set(Calendar.MINUTE, 0);
@@ -121,14 +124,12 @@ import java.util.stream.Collectors;
                         reservationDTO.getEndDate());
 
         if (!startDateAfterOrEqualNow)
-            throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED,
-                    "Start date must be greater or equal now!");
+            return new ResponseEntity<>("Start date must be greater or equal now!", HttpStatus.EXPECTATION_FAILED);
         if (!endDateAfterStartDate)
-            throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED,
-                    "End date must be must be greater than start date!");
+            return new ResponseEntity<>("End date must be must be greater than start date!", HttpStatus.EXPECTATION_FAILED);
         if (hasOtherReservationWithinTheSamePeriod)
-            throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED,
-                    "They are other reservations withing the same period!");
+            return new ResponseEntity<>("They are other reservations withing the same period!", HttpStatus.EXPECTATION_FAILED);
+        return new ResponseEntity<>("Data inputs are valid", HttpStatus.OK);
     }
 
     /**
