@@ -50,3 +50,9 @@ Here is the default data,loaded on server startup : <br/>
 
 ### https://safe-seat-app.herokuapp.com/api/v1/all/floors
 > [GET_REQUEST] => Get all floors
+
+### https://safe-seat-app.herokuapp.com/api/v1/all/teams
+> [GET_REQUEST] => Get all teams
+
+### https://safe-seat-app.herokuapp.com/api/v1/delete/all/reservations
+> [DELETE_REQUEST] => Delete all reservations
